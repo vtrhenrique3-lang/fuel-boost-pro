@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as DashboardRegrasRouteImport } from './routes/dashboard.regras'
+import { Route as DashboardMonitorRouteImport } from './routes/dashboard.monitor'
 import { Route as DashboardClientesRouteImport } from './routes/dashboard.clientes'
 import { Route as AppTokenRouteImport } from './routes/app.token'
 import { Route as AppHistoricoRouteImport } from './routes/app.historico'
@@ -49,6 +50,11 @@ const DashboardRegrasRoute = DashboardRegrasRouteImport.update({
   path: '/regras',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardMonitorRoute = DashboardMonitorRouteImport.update({
+  id: '/monitor',
+  path: '/monitor',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardClientesRoute = DashboardClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/app/historico': typeof AppHistoricoRoute
   '/app/token': typeof AppTokenRoute
   '/dashboard/clientes': typeof DashboardClientesRoute
+  '/dashboard/monitor': typeof DashboardMonitorRoute
   '/dashboard/regras': typeof DashboardRegrasRoute
   '/app/': typeof AppIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/app/historico': typeof AppHistoricoRoute
   '/app/token': typeof AppTokenRoute
   '/dashboard/clientes': typeof DashboardClientesRoute
+  '/dashboard/monitor': typeof DashboardMonitorRoute
   '/dashboard/regras': typeof DashboardRegrasRoute
   '/app': typeof AppIndexRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/app/historico': typeof AppHistoricoRoute
   '/app/token': typeof AppTokenRoute
   '/dashboard/clientes': typeof DashboardClientesRoute
+  '/dashboard/monitor': typeof DashboardMonitorRoute
   '/dashboard/regras': typeof DashboardRegrasRoute
   '/app/': typeof AppIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/app/historico'
     | '/app/token'
     | '/dashboard/clientes'
+    | '/dashboard/monitor'
     | '/dashboard/regras'
     | '/app/'
     | '/dashboard/'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/app/historico'
     | '/app/token'
     | '/dashboard/clientes'
+    | '/dashboard/monitor'
     | '/dashboard/regras'
     | '/app'
     | '/dashboard'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/app/historico'
     | '/app/token'
     | '/dashboard/clientes'
+    | '/dashboard/monitor'
     | '/dashboard/regras'
     | '/app/'
     | '/dashboard/'
@@ -181,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRegrasRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/monitor': {
+      id: '/dashboard/monitor'
+      path: '/monitor'
+      fullPath: '/dashboard/monitor'
+      preLoaderRoute: typeof DashboardMonitorRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/clientes': {
       id: '/dashboard/clientes'
       path: '/clientes'
@@ -221,12 +240,14 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface DashboardRouteChildren {
   DashboardClientesRoute: typeof DashboardClientesRoute
+  DashboardMonitorRoute: typeof DashboardMonitorRoute
   DashboardRegrasRoute: typeof DashboardRegrasRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardClientesRoute: DashboardClientesRoute,
+  DashboardMonitorRoute: DashboardMonitorRoute,
   DashboardRegrasRoute: DashboardRegrasRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }

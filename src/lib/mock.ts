@@ -36,17 +36,35 @@ export const HISTORY = [
   { id: "5", date: "09 Out 2024", liters: 28.1, saved: 1.40, station: "Posto Centro" },
 ];
 
-// Dashboard mock
+// Dashboard mock — realistic fuel sector data
 export const DASHBOARD_METRICS = {
-  volumeMonth: 84_320, // liters
-  discountsGranted: 7_896.40,
-  newCustomers: 312,
-  activeCustomers: 1_847,
+  volumeMonth: 142_500,
+  volumeDelta: 5.0,
+  discountsGranted: 12_350.0,
+  discountsDelta: 7.8,
+  newCustomers: 342,
+  newCustomersDelta: 18.2,
+  churnRisk: 12,
+  churnDelta: 2.4,
 };
 
-export const VOLUME_BY_DAY = [
-  2100, 2400, 1980, 2650, 3100, 3400, 2900,
-  2750, 3050, 3300, 3650, 3200, 2800, 3100,
+export const DAILY_SERIES = Array.from({ length: 30 }).map((_, i) => {
+  const base = 3800 + Math.sin(i / 3) * 600 + (i % 7 === 5 || i % 7 === 6 ? 1400 : 0);
+  const noise = (Math.sin(i * 1.7) + Math.cos(i * 0.9)) * 220;
+  const liters = Math.round(base + noise + i * 25);
+  const discount = Math.round(liters * (0.085 + Math.sin(i / 4) * 0.012));
+  return { day: `${String(i + 1).padStart(2, "0")}/11`, liters, discount };
+});
+
+export const LIVE_TRANSACTIONS = [
+  { id: "tx-9821", time: "14:32:11", status: "ok", cpf: "***.456.789-**", fuel: "Gasolina Aditivada", liters: 42.8, discount: 4.28, total: 248.36, station: "Posto Centro" },
+  { id: "tx-9820", time: "14:31:48", status: "ok", cpf: "***.123.456-**", fuel: "Etanol", liters: 38.2, discount: 3.06, total: 156.40, station: "Posto Av. Brasil" },
+  { id: "tx-9819", time: "14:30:22", status: "ok", cpf: "***.987.321-**", fuel: "Diesel S10", liters: 120.5, discount: 18.07, total: 712.95, station: "Posto Rodovia" },
+  { id: "tx-9818", time: "14:29:05", status: "fail", cpf: "***.654.987-**", fuel: "Gasolina Comum", liters: 0, discount: 0, total: 0, station: "Posto Centro" },
+  { id: "tx-9817", time: "14:28:51", status: "ok", cpf: "***.321.654-**", fuel: "Gasolina Aditivada", liters: 55.0, discount: 5.50, total: 319.50, station: "Posto Centro" },
+  { id: "tx-9816", time: "14:27:39", status: "ok", cpf: "***.789.123-**", fuel: "Diesel S10", liters: 89.3, discount: 13.40, total: 528.20, station: "Posto Av. Brasil" },
+  { id: "tx-9815", time: "14:26:14", status: "ok", cpf: "***.456.123-**", fuel: "Etanol", liters: 31.7, discount: 2.54, total: 129.80, station: "Posto Rodovia" },
+  { id: "tx-9814", time: "14:25:02", status: "ok", cpf: "***.852.741-**", fuel: "Gasolina Comum", liters: 47.2, discount: 3.78, total: 273.76, station: "Posto Centro" },
 ];
 
 export const CUSTOMERS = [
