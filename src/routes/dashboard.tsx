@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, SlidersHorizontal, Users, Fuel, Search } from "lucide-react";
+import { LayoutDashboard, SlidersHorizontal, Brain, Fuel, Search, Radio } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardShell,
@@ -10,8 +10,9 @@ function DashboardShell() {
 
   const items = [
     { to: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
-    { to: "/dashboard/regras", label: "Regras de Desconto", icon: SlidersHorizontal },
-    { to: "/dashboard/clientes", label: "Clientes", icon: Users },
+    { to: "/dashboard/monitor", label: "Monitor de Pista", icon: Radio },
+    { to: "/dashboard/regras", label: "Tiers e Regras", icon: SlidersHorizontal },
+    { to: "/dashboard/clientes", label: "Inteligência de Clientes", icon: Brain },
   ] as const;
 
   return (
