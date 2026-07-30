@@ -103,12 +103,22 @@ function AuthPage() {
 
   async function onGoogle() {
     setError(null);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth`,
+        },
+      });
+      if (error) {
+        const result = await lovable.auth.signInWithOAuth("google", {
+          redirect_uri: `${window.location.origin}/auth`,
+        });
+        if (result.error) throw result.error;
+      }
+    } catch (err) {
+      console.error(err);
       setError("Não foi possível entrar com o Google.");
-      return;
     }
   }
 
