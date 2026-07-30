@@ -1,5 +1,7 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Home, Ticket, ReceiptText } from "lucide-react";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { Home, Ticket, ReceiptText, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/app")({
   component: AppShell,
@@ -7,6 +9,8 @@ export const Route = createFileRoute("/_authenticated/app")({
 
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const tabs = [
     { to: "/app", label: "Início", icon: Home },
@@ -14,9 +18,24 @@ function AppShell() {
     { to: "/app/historico", label: "Histórico", icon: ReceiptText },
   ] as const;
 
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
   return (
     <div className="min-h-screen bg-muted/40">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background shadow-card">
+      <div className="relative mx-auto flex min-h-screen max-w-md flex-col bg-background shadow-card">
+        <button
+          onClick={signOut}
+          className="absolute right-4 top-4 z-40 inline-flex items-center gap-1.5 rounded-full border border-border bg-card/90 px-3 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          Sair
+        </button>
+
         <main className="flex-1 pb-24">
           <Outlet />
         </main>
