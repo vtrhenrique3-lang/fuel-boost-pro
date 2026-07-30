@@ -1,5 +1,9 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, SlidersHorizontal, Brain, Fuel, Search, Radio } from "lucide-react";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { LayoutDashboard, SlidersHorizontal, Brain, Fuel, Radio, LogOut, Smartphone } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { getMyRole } from "@/lib/fidelidade.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardShell,
@@ -7,6 +11,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function DashboardShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const fetchRole = useServerFn(getMyRole);
+  const { data: role } = useQuery({ queryKey: ["my-role"], queryFn: () => fetchRole() });
 
   const items = [
     { to: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
@@ -14,6 +22,13 @@ function DashboardShell() {
     { to: "/dashboard/regras", label: "Tiers e Regras", icon: SlidersHorizontal },
     { to: "/dashboard/clientes", label: "Inteligência de Clientes", icon: Brain },
   ] as const;
+
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
 
   return (
     <div className="flex min-h-screen bg-muted/40">
@@ -24,9 +39,7 @@ function DashboardShell() {
           </div>
           <div>
             <p className="text-sm font-bold leading-none">FuelRewards</p>
-            <p className="mt-1 text-[10px] uppercase tracking-wider opacity-60">
-              Painel do Gestor
-            </p>
+            <p className="mt-1 text-[10px] uppercase tracking-wider opacity-60">Painel do Gestor</p>
           </div>
         </div>
 
@@ -54,8 +67,24 @@ function DashboardShell() {
           </ul>
         </nav>
 
-        <div className="mt-auto px-5 py-5 text-xs opacity-60">
-          Posto Centro · Operador
+        <div className="mt-auto space-y-1 px-3 pb-5">
+          <Link
+            to="/app"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent"
+          >
+            <Smartphone className="h-4 w-4" />
+            App do Motorista
+          </Link>
+          <button
+            onClick={signOut}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </button>
+          <p className="px-3 pt-2 text-xs opacity-60">
+            {role?.isGestor ? "Perfil: Gestor" : "Perfil: Motorista"}
+          </p>
         </div>
       </aside>
 
@@ -68,12 +97,15 @@ function DashboardShell() {
             <span className="text-sm font-bold">FuelRewards</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <div className="hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground sm:flex">
-              <Search className="h-4 w-4" />
-              <span>Buscar cliente, CPF...</span>
-            </div>
+            <button
+              onClick={signOut}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-accent md:hidden"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </button>
             <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-sm font-semibold">
-              MG
+              {role?.isGestor ? "GE" : "MO"}
             </div>
           </div>
         </header>
