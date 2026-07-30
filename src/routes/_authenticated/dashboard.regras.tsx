@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { SlidersHorizontal, Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { getManagerData, updateTier } from "@/lib/fidelidade.functions";
 import { formatBRL } from "@/lib/tiers";
 import { LoadingState, RestrictedState } from "./dashboard.index";
@@ -24,7 +25,13 @@ function Regras() {
   const mutation = useMutation({
     mutationFn: (input: { id: string; min_liters: number; max_liters: number; discount_per_liter: number }) =>
       saveTier({ data: input }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["manager-data"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["manager-data"] });
+      toast.success("Regra do nível atualizada com sucesso!");
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar nível.");
+    },
   });
 
   if (isLoading) return <LoadingState />;

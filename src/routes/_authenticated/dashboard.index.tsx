@@ -12,7 +12,9 @@ import {
   SlidersHorizontal,
   Loader2,
   ShieldAlert,
+  Download,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -43,6 +45,25 @@ function Overview() {
 
   const { metrics, series, transactions, tiers } = data;
 
+  function exportTransactionsCSV() {
+    if (transactions.length === 0) return;
+    const header = "Data,Cliente,CPF,Combustivel,Litros,Desconto_RS,Total_RS\n";
+    const body = transactions
+      .map(
+        (tx) =>
+          `"${new Date(tx.time).toLocaleString("pt-BR")}","${tx.name}","${tx.cpf || ""}","${tx.fuel}","${tx.liters.toFixed(1)}","${tx.discount.toFixed(2)}","${tx.total.toFixed(2)}"`,
+      )
+      .join("\n");
+    const blob = new Blob([header + body], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `transacoes_fuelrewards_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Relatório de transações exportado em CSV!");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -52,10 +73,19 @@ function Overview() {
             Performance do programa de fidelidade · dados reais da operação
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card">
-          <Calendar className="h-4 w-4" />
-          Últimos 30 dias
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={exportTransactionsCSV}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold shadow-card hover:bg-accent transition"
+          >
+            <Download className="h-4 w-4" />
+            Exportar Transações CSV
+          </button>
+          <button className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card">
+            <Calendar className="h-4 w-4" />
+            Últimos 30 dias
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

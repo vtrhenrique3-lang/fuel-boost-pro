@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { ArrowLeft, RefreshCw, ShieldCheck, Copy, Loader2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, ShieldCheck, Copy, Loader2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import { getDriverData, issueFuelToken } from "@/lib/fidelidade.functions";
 import { formatBRL, maskCpf } from "@/lib/tiers";
 
@@ -24,7 +25,10 @@ function TokenScreen() {
 
   const mutation = useMutation({
     mutationFn: () => createToken(),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["driver-data"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["driver-data"] });
+      toast.success("Novo código gerado com sucesso!");
+    },
   });
 
   useEffect(() => {
@@ -48,6 +52,13 @@ function TokenScreen() {
   const ss = String(remaining % 60).padStart(2, "0");
   const pct = Math.min(100, (remaining / 120) * 100);
   const display = token ? `${token.code.slice(0, 3)} ${token.code.slice(3)}` : "— — —";
+  const hasCpf = Boolean(data.profile.cpf && data.profile.cpf.trim().length > 0);
+
+  function copyCode() {
+    if (!token) return;
+    navigator.clipboard?.writeText(token.code);
+    toast.success("Código copiado para a área de transferência!");
+  }
 
   return (
     <div className="flex min-h-screen flex-col px-5 pt-6">
@@ -80,8 +91,8 @@ function TokenScreen() {
 
         {token && (
           <button
-            onClick={() => navigator.clipboard?.writeText(token.code)}
-            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
+            onClick={copyCode}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition"
           >
             <Copy className="h-3.5 w-3.5" /> Copiar código
           </button>
@@ -115,7 +126,14 @@ function TokenScreen() {
         <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-muted/60 p-3">
           <div>
             <p className="text-xs text-muted-foreground">CPF</p>
-            <p className="font-mono text-sm font-semibold">{maskCpf(data.profile.cpf)}</p>
+            <p className="font-mono text-sm font-semibold flex items-center gap-1">
+              {maskCpf(data.profile.cpf)}
+              {!hasCpf && (
+                <Link to="/app/perfil" className="text-xs text-primary underline ml-1">
+                  (Cadastrar)
+                </Link>
+              )}
+            </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Desconto</p>
@@ -129,7 +147,7 @@ function TokenScreen() {
       <button
         onClick={() => mutation.mutate()}
         disabled={mutation.isPending}
-        className="mt-auto mb-28 flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold disabled:opacity-60"
+        className="mt-auto mb-28 flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold disabled:opacity-60 hover:bg-accent transition"
       >
         {mutation.isPending ? (
           <Loader2 className="h-4 w-4 animate-spin" />

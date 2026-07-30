@@ -1,9 +1,10 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { LayoutDashboard, SlidersHorizontal, Brain, Fuel, Radio, LogOut, Smartphone } from "lucide-react";
+import { LayoutDashboard, SlidersHorizontal, Brain, Fuel, Radio, LogOut, Smartphone, ShieldCheck, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getMyRole } from "@/lib/fidelidade.functions";
+import { enableGestorRole, getMyRole } from "@/lib/fidelidade.functions";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardShell,
@@ -14,11 +15,24 @@ function DashboardShell() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fetchRole = useServerFn(getMyRole);
+  const activateGestor = useServerFn(enableGestorRole);
   const { data: role } = useQuery({ queryKey: ["my-role"], queryFn: () => fetchRole() });
+
+  const gestorMutation = useMutation({
+    mutationFn: () => activateGestor(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-role"] });
+      queryClient.invalidateQueries({ queryKey: ["manager-data"] });
+      toast.success("Modo Gestor ativado com sucesso!");
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Erro ao ativar modo gestor");
+    },
+  });
 
   const items = [
     { to: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
-    { to: "/dashboard/monitor", label: "Monitor de Pista", icon: Radio },
+    { to: "/dashboard/monitor", label: "Terminal da Pista", icon: Radio },
     { to: "/dashboard/regras", label: "Tiers e Regras", icon: SlidersHorizontal },
     { to: "/dashboard/clientes", label: "Inteligência de Clientes", icon: Brain },
   ] as const;
@@ -68,6 +82,21 @@ function DashboardShell() {
         </nav>
 
         <div className="mt-auto space-y-1 px-3 pb-5">
+          {!role?.isGestor && (
+            <button
+              onClick={() => gestorMutation.mutate()}
+              disabled={gestorMutation.isPending}
+              className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow transition hover:opacity-90 disabled:opacity-60"
+            >
+              {gestorMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ShieldCheck className="h-3.5 w-3.5" />
+              )}
+              Ativar Modo Gestor Demo
+            </button>
+          )}
+
           <Link
             to="/app"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent"
@@ -97,6 +126,15 @@ function DashboardShell() {
             <span className="text-sm font-bold">FuelRewards</span>
           </div>
           <div className="ml-auto flex items-center gap-3">
+            {!role?.isGestor && (
+              <button
+                onClick={() => gestorMutation.mutate()}
+                disabled={gestorMutation.isPending}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground md:hidden"
+              >
+                Ativar Gestor Demo
+              </button>
+            )}
             <button
               onClick={signOut}
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-accent md:hidden"

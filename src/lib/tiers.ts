@@ -9,27 +9,41 @@ export type TierRow = {
 };
 
 export function resolveTier(tiers: TierRow[], volume: number) {
-  const sorted = [...tiers].sort((a, b) => a.sort_order - b.sort_order);
-  const idx = Math.max(
-    0,
-    sorted.findIndex((t) => volume >= t.min_liters && volume <= t.max_liters),
-  );
-  const current = sorted[idx] ?? sorted[0];
-  const next = sorted[Math.min(sorted.length - 1, idx + 1)] ?? current;
+  if (!tiers || tiers.length === 0) {
+    return { tiers: [], current: null, next: null, isMax: true };
+  }
+
+  const sorted = [...tiers].sort((a, b) => Number(a.sort_order) - Number(b.sort_order));
+  const safeVolume = Math.max(0, Number(volume) || 0);
+
+  let current = sorted[0];
+  for (const t of sorted) {
+    if (safeVolume >= Number(t.min_liters)) {
+      current = t;
+    }
+  }
+
+  const currentIdx = sorted.findIndex((t) => t.id === current.id);
+  const next = sorted[Math.min(sorted.length - 1, currentIdx + 1)] ?? current;
+  const isMax = currentIdx === sorted.length - 1;
+
   return {
     tiers: sorted,
     current,
     next,
-    isMax: !!current && current.id === sorted[sorted.length - 1]?.id,
+    isMax,
   };
 }
 
-export function formatBRL(n: number) {
-  return (n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+export function formatBRL(n: number | null | undefined) {
+  const val = Number(n ?? 0);
+  return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 export function maskCpf(cpf?: string | null) {
-  if (!cpf) return "***.***.***-**";
-  const digits = cpf.replace(/\D/g, "").padStart(11, "*");
+  if (!cpf || cpf.trim().length === 0) return "Não cadastrado";
+  const digits = cpf.replace(/\D/g, "");
+  if (digits.length < 11) return cpf;
   return `***.${digits.slice(3, 6)}.${digits.slice(6, 9)}-**`;
 }
+

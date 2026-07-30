@@ -20,6 +20,7 @@ import { Route as AuthenticatedDashboardRegrasRouteImport } from './routes/_auth
 import { Route as AuthenticatedDashboardMonitorRouteImport } from './routes/_authenticated/dashboard.monitor'
 import { Route as AuthenticatedDashboardClientesRouteImport } from './routes/_authenticated/dashboard.clientes'
 import { Route as AuthenticatedAppTokenRouteImport } from './routes/_authenticated/app.token'
+import { Route as AuthenticatedAppPerfilRouteImport } from './routes/_authenticated/app.perfil'
 import { Route as AuthenticatedAppHistoricoRouteImport } from './routes/_authenticated/app.historico'
 
 const AuthRoute = AuthRouteImport.update({
@@ -80,6 +81,11 @@ const AuthenticatedAppTokenRoute = AuthenticatedAppTokenRouteImport.update({
   path: '/token',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppPerfilRoute = AuthenticatedAppPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppHistoricoRoute =
   AuthenticatedAppHistoricoRouteImport.update({
     id: '/historico',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/app/historico': typeof AuthenticatedAppHistoricoRoute
+  '/app/perfil': typeof AuthenticatedAppPerfilRoute
   '/app/token': typeof AuthenticatedAppTokenRoute
   '/dashboard/clientes': typeof AuthenticatedDashboardClientesRoute
   '/dashboard/monitor': typeof AuthenticatedDashboardMonitorRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/app/historico': typeof AuthenticatedAppHistoricoRoute
+  '/app/perfil': typeof AuthenticatedAppPerfilRoute
   '/app/token': typeof AuthenticatedAppTokenRoute
   '/dashboard/clientes': typeof AuthenticatedDashboardClientesRoute
   '/dashboard/monitor': typeof AuthenticatedDashboardMonitorRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteWithChildren
   '/_authenticated/app/historico': typeof AuthenticatedAppHistoricoRoute
+  '/_authenticated/app/perfil': typeof AuthenticatedAppPerfilRoute
   '/_authenticated/app/token': typeof AuthenticatedAppTokenRoute
   '/_authenticated/dashboard/clientes': typeof AuthenticatedDashboardClientesRoute
   '/_authenticated/dashboard/monitor': typeof AuthenticatedDashboardMonitorRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/dashboard'
     | '/app/historico'
+    | '/app/perfil'
     | '/app/token'
     | '/dashboard/clientes'
     | '/dashboard/monitor'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/app/historico'
+    | '/app/perfil'
     | '/app/token'
     | '/dashboard/clientes'
     | '/dashboard/monitor'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/_authenticated/dashboard'
     | '/_authenticated/app/historico'
+    | '/_authenticated/app/perfil'
     | '/_authenticated/app/token'
     | '/_authenticated/dashboard/clientes'
     | '/_authenticated/dashboard/monitor'
@@ -252,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppTokenRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/perfil': {
+      id: '/_authenticated/app/perfil'
+      path: '/perfil'
+      fullPath: '/app/perfil'
+      preLoaderRoute: typeof AuthenticatedAppPerfilRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/historico': {
       id: '/_authenticated/app/historico'
       path: '/historico'
@@ -264,12 +283,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppHistoricoRoute: typeof AuthenticatedAppHistoricoRoute
+  AuthenticatedAppPerfilRoute: typeof AuthenticatedAppPerfilRoute
   AuthenticatedAppTokenRoute: typeof AuthenticatedAppTokenRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppHistoricoRoute: AuthenticatedAppHistoricoRoute,
+  AuthenticatedAppPerfilRoute: AuthenticatedAppPerfilRoute,
   AuthenticatedAppTokenRoute: AuthenticatedAppTokenRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
 }
@@ -318,3 +339,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

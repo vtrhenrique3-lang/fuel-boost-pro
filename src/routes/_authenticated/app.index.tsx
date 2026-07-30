@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, Fuel, Zap, TrendingUp, Loader2 } from "lucide-react";
+import { Bell, Fuel, Zap, TrendingUp, Loader2, AlertCircle, ChevronRight } from "lucide-react";
 import { getDriverData } from "@/lib/fidelidade.functions";
 import { formatBRL } from "@/lib/tiers";
 
@@ -33,6 +33,7 @@ function HomeScreen() {
     Math.max(0, Math.round(((volumeMonth - Number(current?.min_liters ?? 0)) / span) * 100)),
   );
   const firstName = (profile.full_name || "Motorista").split(" ")[0];
+  const hasCpf = Boolean(profile.cpf && profile.cpf.trim().length > 0);
 
   return (
     <div className="flex flex-col gap-5 px-5 pt-6">
@@ -46,10 +47,26 @@ function HomeScreen() {
             <p className="truncate text-sm font-semibold">{firstName}</p>
           </div>
         </div>
-        <button className="grid h-10 w-10 place-items-center rounded-xl border border-border text-muted-foreground">
+        <Link
+          to="/app/perfil"
+          className="grid h-10 w-10 place-items-center rounded-xl border border-border text-muted-foreground hover:bg-accent"
+        >
           <Bell className="h-5 w-5" />
-        </button>
+        </Link>
       </div>
+
+      {!hasCpf && (
+        <Link
+          to="/app/perfil"
+          className="flex items-center justify-between gap-3 rounded-2xl border border-warning/30 bg-warning/10 p-4 text-xs text-warning-foreground transition hover:bg-warning/15"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-warning" />
+            <span>Cadastre seu <b>CPF</b> para liberar desconto na bomba</span>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0" />
+        </Link>
+      )}
 
       <div
         className="relative overflow-hidden rounded-3xl p-5 text-white shadow-float"

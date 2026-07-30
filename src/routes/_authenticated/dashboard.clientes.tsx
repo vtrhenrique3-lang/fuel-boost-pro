@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Search, Brain } from "lucide-react";
+import { Search, Brain, Download } from "lucide-react";
+import { toast } from "sonner";
 import { getManagerData } from "@/lib/fidelidade.functions";
 import { maskCpf } from "@/lib/tiers";
 import { LoadingState, RestrictedState } from "./dashboard.index";
@@ -27,6 +28,27 @@ function Clientes() {
     (c) => !q || c.name.toLowerCase().includes(q) || (c.cpf ?? "").includes(q),
   );
 
+  function exportCSV() {
+    if (rows.length === 0) return;
+    const header = "Nome,CPF,Volume_Mes_L,Nivel,Ultima_Visita\n";
+    const body = rows
+      .map(
+        (c) =>
+          `"${c.name}","${c.cpf || ""}","${c.volume.toFixed(1)}","${c.tier}","${
+            c.lastVisit ? new Date(c.lastVisit).toLocaleDateString("pt-BR") : "Nunca"
+          }"`,
+      )
+      .join("\n");
+    const blob = new Blob([header + body], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clientes_fuelrewards_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Relatório de clientes exportado em CSV!");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -36,16 +58,25 @@ function Clientes() {
             Base de motoristas cadastrados, volume no mês e nível de fidelidade
           </p>
         </div>
-        <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-card">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <input
-            value={term}
-            maxLength={60}
-            onChange={(e) => setTerm(e.target.value)}
-            placeholder="Buscar cliente ou CPF"
-            className="w-56 bg-transparent outline-none placeholder:text-muted-foreground"
-          />
-        </label>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={exportCSV}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold shadow-card hover:bg-accent transition"
+          >
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </button>
+          <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-card">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input
+              value={term}
+              maxLength={60}
+              onChange={(e) => setTerm(e.target.value)}
+              placeholder="Buscar cliente ou CPF"
+              className="w-56 bg-transparent outline-none placeholder:text-muted-foreground"
+            />
+          </label>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-card shadow-card">

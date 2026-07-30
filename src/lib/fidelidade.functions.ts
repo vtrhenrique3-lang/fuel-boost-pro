@@ -6,6 +6,10 @@ import {
   buildDriverPayload,
   buildManagerPayload,
   generateTokenCode,
+  redeemTokenAndRecordFueling,
+  toggleGestorRole,
+  updateProfileData,
+  validateTokenForPump,
 } from "./fidelidade.server";
 
 export const getDriverData = createServerFn({ method: "GET" })
@@ -70,3 +74,56 @@ export const updateTier = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+export const updateDriverProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        fullName: z.string().optional(),
+        cpf: z.string().optional(),
+        phone: z.string().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    return updateProfileData(context.supabase, context.userId, data);
+  });
+
+export const validateTokenCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        codeOrCpf: z.string().min(1),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    await assertGestor(context.supabase, context.userId);
+    return validateTokenForPump(context.supabase, data.codeOrCpf);
+  });
+
+export const redeemTokenAndFuel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        code: z.string().min(1),
+        liters: z.number().positive(),
+        fuelType: z.string().min(1),
+        unitPrice: z.number().positive(),
+        stationId: z.string().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    return redeemTokenAndRecordFueling(context.supabase, context.userId, data);
+  });
+
+export const enableGestorRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    return toggleGestorRole(context.supabase, context.userId);
+  });
+

@@ -1,62 +1,53 @@
-# Fuel Up Rewards
+# ⛽ FuelRewards — Plataforma White-Label de Fidelidade para Postos
 
-Crie um protótipo de aplicativo mobile e um dashboard web de fidelidade white-label para postos de combustíveis. O modelo de negócios não usa cashback, mas sim desconto imediato na bomba aliado a um sistema de gamificação por volume abastecido. O stack de tecnologia preferencial é React, Tailwind CSS e Lucide Icons.
+O **FuelRewards** é uma solução completa (SaaS White-Label) de fidelidade para postos de combustíveis. Diferente de modelos tradicionais baseados em cashback, a plataforma oferece **desconto direto na bomba com gamificação por volume abastecido**, aumentando o LTV (Lifetime Value) e reduzindo a perda de clientes na pista.
 
-​1. Design System e UI/UX
+---
 
-​Estilo visual: Moderno, minimalista e focado em conversão rápida.
+## ⚡ Diferenciais Comerciais & Funcionalidades
 
-​Cores: Como é um app white-label, utilize um tema base neutro (branco, cinza claro) com uma cor primária vibrante (ex: azul elétrico ou laranja) para representar a "Marca do Posto" nos botões e destaques.
+### 📱 App do Motorista (Mobile-First)
+- **Gamificação por Níveis**: Níveis Bronze, Prata, Ouro e Diamante com barras de progresso dinâmicas por litros acumulados no mês.
+- **Token Único & Antifraude (6 dígitos)**: Geração de código dinâmico com expiração regressiva de 2 minutos para apresentação na bomba.
+- **Gestão de Perfil & CPF**: Cadastro e atualização de CPF e telefone para identificação segura na validação do desconto.
+- **Histórico Transparente**: Registro detalhado dos litros abastecidos e valor economizado em R$.
 
-​Tipografia: Sans-serif legível e grande (fácil de ler ao ar livre, no ambiente do posto).
+### 💻 Painel do Gestor & Terminal da Pista (Desktop Web)
+- **Terminal POS / Validador de Pista**: Validação instantânea do token de 6 dígitos ou CPF do motorista pelo frentista, com cálculo automático de subtotal, desconto aplicado e valor final líquido.
+- **Painel de Regras & Tiers**: Ajuste dinâmico de faixas de volume (L) e desconto concedido por litro (R$/L) valendo em tempo real.
+- **Inteligência de Vendas e Churn**: Indicadores de galonagem mensal, descontos totais concedidos, novos clientes cadastrados e percentual de risco de churn.
+- **Exportação de Relatórios (CSV)**: Exportação de relatório completo de clientes e transações para integração contábil e auditoria.
+- **Modo Gestor Demo Integrado**: Botão de alternância instantânea para demonstração comercial em apresentações de vendas.
 
-​Responsividade: Foco mobile-first para o aplicativo do motorista e desktop para o painel do gestor.
+---
 
-​2. Telas do Aplicativo do Motorista (Mobile)
+## 🛠️ Tecnologias Utilizadas
 
-​Tela Home: Deve conter uma saudação ao usuário. O foco principal é um card central mostrando o nível atual da gamificação (Ex: "Nível Ouro") e o desconto atual (Ex: "Seu desconto: R$ 0,10 / Litro"). Abaixo, uma barra de progresso visual (Ex: "Faltam 15 litros para o Nível Diamante e ganhar R$ 0,15/L").
+- **Core**: React 19 + TypeScript
+- **Roteamento & Server Functions**: TanStack Router + TanStack Start + TanStack Query
+- **Estilização**: Tailwind CSS v4 + Design System responsivo
+- **Notificações**: Sonner (Toast notifications)
+- **Backend & Banco de Dados**: Supabase (Auth, Postgres RLS e Triggers)
 
-​Ação Principal (CTA): Um botão grande e flutuante na tela Home escrito "Abastecer com Desconto".
+---
 
-​Tela de Token (Segurança): Ao clicar no botão principal, abre um modal ou nova tela exibindo um token dinâmico grande (ex: 439 012) e um cronômetro regressivo de 2 minutos. Adicione um texto instrucional: "Informe seu CPF e este código ao frentista".
+## 🚀 Como Executar Localmente
 
-​Tela de Histórico: Uma lista simples mostrando os últimos abastecimentos (Data, Volume em Litros, Valor Economizado na hora).
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/vtrhenrique3-lang/fuel-boost-pro.git
+   cd fuel-boost-pro
+   ```
+2. Instale as dependências:
+   ```bash
+   npm install
+   # ou
+   bun install
+   ```
+3. Execute o ambiente de desenvolvimento:
+   ```bash
+   npm run dev
+   # ou
+   bun dev
+   ```
 
-​3. Tela do Gestor do Posto (Dashboard Web)
-
-​Sidebar: Menu lateral com "Visão Geral", "Regras de Desconto", "Clientes".
-
-​Visão Geral (Métricas): Cards superiores com dados simulados: "Volume Total Abastecido no Mês", "Total de Descontos Concedidos", e "Novos Clientes Cadastrados".
-
-​Configuração de Tiers: Uma seção mostrando os níveis de gamificação configurados (ex: Nível 1 - 0 a 50L = R$ 0,05; Nível 2 - 51 a 100L = R$ 0,10).
-
-​4. Comportamentos e Mock Data
-
-​Popule a interface com dados falsos (mock data) realistas para que o protótipo não pareça vazio.
-
-​Torne o botão "Abastecer com Desconto" clicável, ativando o cronômetro do token.
-
-​A interface deve transmitir velocidade e confiança. Evite animações muito longas, o foco é a agilidade na pista de abastecimento.
-
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://fuel-boost-pro.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/50974f20-6cd8-4f08-b626-6292eee01826).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```

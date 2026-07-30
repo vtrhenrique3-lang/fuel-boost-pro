@@ -171,3 +171,143 @@ export async function buildManagerPayload(supabase: Client) {
     customers: customers.sort((a, b) => b.volume - a.volume),
   };
 }
+
+export async function updateProfileData(
+  supabase: Client,
+  userId: string,
+  data: { fullName?: string; cpf?: string; phone?: string },
+) {
+  const updatePayload: Record<string, any> = {};
+  if (data.fullName !== undefined) updatePayload.full_name = data.fullName.trim();
+  if (data.cpf !== undefined) updatePayload.cpf = data.cpf.replace(/\D/g, "");
+  if (data.phone !== undefined) updatePayload.phone = data.phone.trim();
+
+  const { error } = await supabase.from("profiles").update(updatePayload).eq("id", userId);
+  if (error) throw error;
+  return { ok: true };
+}
+
+export async function validateTokenForPump(supabase: Client, codeOrCpf: string) {
+  const cleanInput = codeOrCpf.trim();
+  const digitsOnly = cleanInput.replace(/\D/g, "");
+
+  const now = new Date().toISOString();
+
+  let tokenQuery = supabase
+    .from("fuel_tokens")
+    .select("id, code, user_id, expires_at, used_at")
+    .gt("expires_at", now)
+    .is("used_at", null)
+    .order("created_at", { ascending: false });
+
+  if (digitsOnly.length === 6) {
+    tokenQuery = tokenQuery.eq("code", digitsOnly);
+  } else {
+    // Buscar usuário por CPF primeiro
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("cpf", digitsOnly)
+      .maybeSingle();
+
+    if (!profile) throw new Error("Motorista não encontrado com este CPF.");
+    tokenQuery = tokenQuery.eq("user_id", profile.id);
+  }
+
+  const { data: tokens, error } = await tokenQuery.limit(1);
+  if (error) throw error;
+  const token = tokens?.[0];
+  if (!token) throw new Error("Nenhum token ativo ou válido encontrado para esta consulta.");
+
+  // Buscar dados do motorista para calcular o nível e desconto
+  const driverData = await buildDriverPayload(supabase, token.user_id);
+  return {
+    tokenId: token.id,
+    code: token.code,
+    userId: token.user_id,
+    expiresAt: token.expires_at,
+    driverName: driverData.profile.full_name || "Motorista",
+    driverCpf: driverData.profile.cpf,
+    tierName: driverData.current?.name ?? "Bronze",
+    discountPerLiter: Number(driverData.current?.discount_per_liter ?? 0.05),
+    volumeMonth: driverData.volumeMonth,
+  };
+}
+
+export async function redeemTokenAndRecordFueling(
+  supabase: Client,
+  gestorUserId: string,
+  params: {
+    code: string;
+    liters: number;
+    fuelType: string;
+    unitPrice: number;
+    stationId?: string;
+  },
+) {
+  await assertGestor(supabase, gestorUserId);
+
+  const validated = await validateTokenForPump(supabase, params.code);
+  const discountPerLiter = validated.discountPerLiter;
+  const discountTotal = params.liters * discountPerLiter;
+  const rawTotal = params.liters * params.unitPrice;
+  const finalTotal = Math.max(0, rawTotal - discountTotal);
+
+  // 1. Inserir abastecimento
+  const { data: fueling, error: fuelingError } = await supabase
+    .from("fuelings")
+    .insert({
+      user_id: validated.userId,
+      station_id: params.stationId ?? null,
+      fuel_type: params.fuelType,
+      liters: params.liters,
+      unit_price: params.unitPrice,
+      discount_per_liter: discountPerLiter,
+      discount_total: discountTotal,
+      total: finalTotal,
+      status: "ok",
+    })
+    .select()
+    .single();
+
+  if (fuelingError) throw fuelingError;
+
+  // 2. Marcar token como utilizado
+  await supabase
+    .from("fuel_tokens")
+    .update({ used_at: new Date().toISOString() })
+    .eq("id", validated.tokenId);
+
+  return {
+    success: true,
+    fuelingId: fueling.id,
+    driverName: validated.driverName,
+    tierName: validated.tierName,
+    discountPerLiter,
+    discountTotal,
+    finalTotal,
+  };
+}
+
+export async function toggleGestorRole(supabase: Client, userId: string) {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "gestor")
+    .maybeSingle();
+
+  if (data) {
+    // Já é gestor, não fazemos nada (mantém permissão de demonstração)
+    return { isGestor: true, action: "maintained" };
+  } else {
+    // Adicionar papel de gestor para facilitar testes/demonstração
+    const { error } = await supabase.from("user_roles").insert({
+      user_id: userId,
+      role: "gestor",
+    });
+    if (error) throw error;
+    return { isGestor: true, action: "granted" };
+  }
+}
+
