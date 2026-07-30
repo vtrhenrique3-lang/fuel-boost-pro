@@ -1,80 +1,96 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, Download } from "lucide-react";
-import { CUSTOMERS } from "@/lib/mock";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { Search, Brain } from "lucide-react";
+import { getManagerData } from "@/lib/fidelidade.functions";
+import { maskCpf } from "@/lib/tiers";
+import { LoadingState, RestrictedState } from "./dashboard.index";
 
 export const Route = createFileRoute("/_authenticated/dashboard/clientes")({
-  component: Customers,
+  component: Clientes,
 });
 
-const tierColor: Record<string, string> = {
-  Bronze: "tier-bronze",
-  Prata: "tier-silver",
-  Ouro: "tier-gold",
-  Diamante: "tier-diamond",
-};
+function Clientes() {
+  const fetchManager = useServerFn(getManagerData);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["manager-data"],
+    queryFn: () => fetchManager(),
+  });
+  const [term, setTerm] = useState("");
 
-function Customers() {
+  if (isLoading) return <LoadingState />;
+  if (error || !data) return <RestrictedState />;
+
+  const q = term.trim().toLowerCase().slice(0, 60);
+  const rows = data.customers.filter(
+    (c) => !q || c.name.toLowerCase().includes(q) || (c.cpf ?? "").includes(q),
+  );
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Inteligência de Clientes</h1>
           <p className="text-sm text-muted-foreground">
-            {CUSTOMERS.length} motoristas ativos no programa.
+            Base de motoristas cadastrados, volume no mês e nível de fidelidade
           </p>
         </div>
-        <button className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold">
-          <Download className="h-4 w-4" />
-          Exportar CSV
-        </button>
+        <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-card">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <input
+            value={term}
+            maxLength={60}
+            onChange={(e) => setTerm(e.target.value)}
+            placeholder="Buscar cliente ou CPF"
+            className="w-56 bg-transparent outline-none placeholder:text-muted-foreground"
+          />
+        </label>
       </div>
 
-      <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 shadow-card">
-        <Search className="h-4 w-4 text-muted-foreground" />
-        <input
-          placeholder="Buscar por nome ou CPF..."
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
+      <div className="rounded-2xl border border-border bg-card shadow-card">
+        {rows.length === 0 ? (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            Nenhum cliente encontrado.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs uppercase tracking-wider text-muted-foreground">
+                <tr className="border-b border-border">
+                  <th className="px-5 py-3 text-left font-semibold">Cliente</th>
+                  <th className="px-5 py-3 text-left font-semibold">CPF</th>
+                  <th className="px-5 py-3 text-right font-semibold">Volume no mês</th>
+                  <th className="px-5 py-3 text-left font-semibold">Nível</th>
+                  <th className="px-5 py-3 text-left font-semibold">Última visita</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((c) => (
+                  <tr key={c.id} className="border-b border-border/60 last:border-0 hover:bg-muted/40">
+                    <td className="px-5 py-3 font-medium">{c.name}</td>
+                    <td className="px-5 py-3 tabular-nums text-muted-foreground">{maskCpf(c.cpf)}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{c.volume.toFixed(0)} L</td>
+                    <td className="px-5 py-3">
+                      <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
+                        {c.tier}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground">
+                      {c.lastVisit ? new Date(c.lastVisit).toLocaleDateString("pt-BR") : "Nunca abasteceu"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/60 text-xs uppercase tracking-wider text-muted-foreground">
-            <tr>
-              <th className="px-5 py-3 text-left font-semibold">Cliente</th>
-              <th className="px-5 py-3 text-left font-semibold">CPF</th>
-              <th className="px-5 py-3 text-left font-semibold">Volume (mês)</th>
-              <th className="px-5 py-3 text-left font-semibold">Nível</th>
-              <th className="px-5 py-3 text-left font-semibold">Última visita</th>
-            </tr>
-          </thead>
-          <tbody>
-            {CUSTOMERS.map((c) => (
-              <tr key={c.id} className="border-t border-border">
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-xs font-bold">
-                      {c.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
-                    </div>
-                    <span className="font-semibold">{c.name}</span>
-                  </div>
-                </td>
-                <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{c.cpf}</td>
-                <td className="px-5 py-3 font-semibold tabular-nums">{c.volume}L</td>
-                <td className="px-5 py-3">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: `var(--${tierColor[c.tier]})` }}
-                    />
-                    {c.tier}
-                  </span>
-                </td>
-                <td className="px-5 py-3 text-muted-foreground">{c.lastVisit}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground shadow-card">
+        <Brain className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        Clientes sem abastecimento nos últimos 30 dias entram no indicador de risco de churn da
+        visão geral.
       </div>
     </div>
   );
