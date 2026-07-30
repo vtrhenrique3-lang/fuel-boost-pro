@@ -104,21 +104,36 @@ function AuthPage() {
   async function onGoogle() {
     setError(null);
     try {
+      const redirectUrl = `${window.location.origin}/auth`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: redirectUrl,
         },
       });
+
       if (error) {
-        const result = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: `${window.location.origin}/auth`,
+        // Fallback: tenta sem a subrota no redirectTo caso apenas a raiz esteja permitida no Supabase
+        const { error: err2 } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: window.location.origin,
+          },
         });
-        if (result.error) throw result.error;
+        if (err2) throw err2;
       }
-    } catch (err) {
-      console.error(err);
-      setError("Não foi possível entrar com o Google.");
+    } catch (err: any) {
+      console.error("[Google Auth Error]", err);
+      const msg = err?.message || String(err);
+      if (msg.includes("redirect") || msg.includes("not allowed") || err?.status === 400) {
+        setError(
+          `Adicione a URL ${window.location.origin} no Supabase (Authentication -> URL Configuration -> Redirect URLs).`
+        );
+      } else if (msg.includes("provider")) {
+        setError("Ative o provedor Google no Supabase (Authentication -> Providers -> Google).");
+      } else {
+        setError("Não foi possível entrar com o Google. Use o login com e-mail acima.");
+      }
     }
   }
 
