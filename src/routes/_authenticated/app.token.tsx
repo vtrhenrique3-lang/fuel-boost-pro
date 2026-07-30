@@ -1,40 +1,53 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, RefreshCw, ShieldCheck, Copy } from "lucide-react";
-import { CURRENT_USER, formatBRL, tierFor } from "@/lib/mock";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
+import { ArrowLeft, RefreshCw, ShieldCheck, Copy, Loader2 } from "lucide-react";
+import { getDriverData, issueFuelToken } from "@/lib/fidelidade.functions";
+import { formatBRL, maskCpf } from "@/lib/tiers";
 
 export const Route = createFileRoute("/_authenticated/app/token")({
   component: TokenScreen,
 });
 
-const TOKEN_TTL = 120; // seconds
-
-function genToken() {
-  const n = Math.floor(100_000 + Math.random() * 900_000).toString();
-  return `${n.slice(0, 3)} ${n.slice(3)}`;
-}
-
 function TokenScreen() {
   const navigate = useNavigate();
-  const [token, setToken] = useState(() => genToken());
-  const [remaining, setRemaining] = useState(TOKEN_TTL);
-  const { current } = tierFor(CURRENT_USER.volumeMonth);
+  const queryClient = useQueryClient();
+  const fetchDriver = useServerFn(getDriverData);
+  const createToken = useServerFn(issueFuelToken);
+  const [now, setNow] = useState(() => Date.now());
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["driver-data"],
+    queryFn: () => fetchDriver(),
+  });
+
+  const mutation = useMutation({
+    mutationFn: () => createToken(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["driver-data"] }),
+  });
 
   useEffect(() => {
-    if (remaining <= 0) return;
-    const id = setInterval(() => setRemaining((r) => r - 1), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [remaining]);
+  }, []);
 
+  if (isLoading || !data) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+
+  const token = mutation.data ?? data.lastToken;
+  const expiresAt = token ? new Date(token.expires_at).getTime() : 0;
+  const remaining = token ? Math.max(0, Math.floor((expiresAt - now) / 1000)) : 0;
+  const expired = !token || remaining <= 0;
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
-  const pct = useMemo(() => (remaining / TOKEN_TTL) * 100, [remaining]);
-  const expired = remaining <= 0;
-
-  function regen() {
-    setToken(genToken());
-    setRemaining(TOKEN_TTL);
-  }
+  const pct = Math.min(100, (remaining / 120) * 100);
+  const display = token ? `${token.code.slice(0, 3)} ${token.code.slice(3)}` : "— — —";
 
   return (
     <div className="flex min-h-screen flex-col px-5 pt-6">
@@ -62,23 +75,22 @@ function TokenScreen() {
             expired ? "text-muted-foreground line-through" : "text-foreground"
           }`}
         >
-          {token}
+          {display}
         </div>
 
-        <button
-          onClick={() => navigator.clipboard?.writeText(token.replace(" ", ""))}
-          className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
-        >
-          <Copy className="h-3.5 w-3.5" /> Copiar código
-        </button>
+        {token && (
+          <button
+            onClick={() => navigator.clipboard?.writeText(token.code)}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
+          >
+            <Copy className="h-3.5 w-3.5" /> Copiar código
+          </button>
+        )}
 
-        {/* Timer ring */}
         <div className="mt-8 flex w-full flex-col items-center gap-3">
           <div className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-muted">
             <div
-              className={`h-full rounded-full transition-all ${
-                expired ? "bg-destructive" : "bg-primary"
-              }`}
+              className={`h-full rounded-full transition-all ${expired ? "bg-destructive" : "bg-primary"}`}
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -87,7 +99,7 @@ function TokenScreen() {
               expired ? "text-destructive" : "text-foreground"
             }`}
           >
-            {expired ? "Código expirado" : `Expira em ${mm}:${ss}`}
+            {expired ? "Nenhum código válido" : `Expira em ${mm}:${ss}`}
           </p>
         </div>
       </div>
@@ -96,29 +108,34 @@ function TokenScreen() {
         <p className="text-sm font-semibold">Instruções</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Informe ao frentista o seu <b className="text-foreground">CPF</b> e este{" "}
-          <b className="text-foreground">código de 6 dígitos</b> antes de iniciar o
-          abastecimento. O desconto será aplicado direto na bomba.
+          <b className="text-foreground">código de 6 dígitos</b> antes de iniciar o abastecimento. O
+          desconto será aplicado direto na bomba.
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-muted/60 p-3">
           <div>
             <p className="text-xs text-muted-foreground">CPF</p>
-            <p className="font-mono text-sm font-semibold">{CURRENT_USER.cpf}</p>
+            <p className="font-mono text-sm font-semibold">{maskCpf(data.profile.cpf)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Desconto</p>
             <p className="text-sm font-semibold text-primary">
-              {formatBRL(current.discount)}/L
+              {formatBRL(Number(data.current?.discount_per_liter ?? 0))}/L
             </p>
           </div>
         </div>
       </div>
 
       <button
-        onClick={regen}
-        className="mt-auto mb-28 flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold"
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending}
+        className="mt-auto mb-28 flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 py-3 text-sm font-semibold disabled:opacity-60"
       >
-        <RefreshCw className="h-4 w-4" />
+        {mutation.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <RefreshCw className="h-4 w-4" />
+        )}
         {expired ? "Gerar novo código" : "Renovar código"}
       </button>
     </div>
