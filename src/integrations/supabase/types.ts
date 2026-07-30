@@ -14,16 +14,217 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fuel_tokens: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fuelings: {
+        Row: {
+          created_at: string
+          discount_per_liter: number
+          discount_total: number
+          fuel_type: string
+          id: string
+          liters: number
+          station_id: string | null
+          status: string
+          total: number
+          unit_price: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_per_liter?: number
+          discount_total?: number
+          fuel_type?: string
+          id?: string
+          liters?: number
+          station_id?: string | null
+          status?: string
+          total?: number
+          unit_price?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_per_liter?: number
+          discount_total?: number
+          fuel_type?: string
+          id?: string
+          liters?: number
+          station_id?: string | null
+          status?: string
+          total?: number
+          unit_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuelings_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          cpf: string | null
+          created_at: string
+          full_name: string
+          id: string
+          phone: string | null
+          station_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string
+          full_name?: string
+          id: string
+          phone?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stations: {
+        Row: {
+          active: boolean
+          city: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          city?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          city?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      tiers: {
+        Row: {
+          color: string
+          created_at: string
+          discount_per_liter: number
+          id: string
+          max_liters: number
+          min_liters: number
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          discount_per_liter?: number
+          id?: string
+          max_liters?: number
+          min_liters?: number
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          discount_per_liter?: number
+          id?: string
+          max_liters?: number
+          min_liters?: number
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "gestor" | "motorista"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +351,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["gestor", "motorista"],
+    },
   },
 } as const
