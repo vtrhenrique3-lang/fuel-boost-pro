@@ -124,15 +124,17 @@ function AuthPage() {
       }
     } catch (err: any) {
       console.error("[Google Auth Error]", err);
-      const msg = err?.message || String(err);
-      if (msg.includes("redirect") || msg.includes("not allowed") || err?.status === 400) {
+      const msg = err?.message || JSON.stringify(err);
+      if (msg.includes("missing OAuth secret") || msg.includes("validation_failed") || msg.includes("Unsupported provider")) {
+        setError(
+          "O login com Google não foi configurado no Supabase (falta o Client Secret do Google no painel). Entre com E-mail e Senha abaixo."
+        );
+      } else if (msg.includes("redirect") || msg.includes("not allowed")) {
         setError(
           `Adicione a URL ${window.location.origin} no Supabase (Authentication -> URL Configuration -> Redirect URLs).`
         );
-      } else if (msg.includes("provider")) {
-        setError("Ative o provedor Google no Supabase (Authentication -> Providers -> Google).");
       } else {
-        setError("Não foi possível entrar com o Google. Use o login com e-mail acima.");
+        setError("Não foi possível entrar com o Google. Use o login com E-mail e Senha abaixo.");
       }
     }
   }
